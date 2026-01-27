@@ -247,7 +247,7 @@ with st.sidebar:
                 )
         
         st.markdown("###")
-        submitted = st.form_submit_button("🚀 Run Prediction Analysis")
+        submitted = st.form_submit_button("Run Prediction Analysis")
 
 # 转为 DataFrame
 input_df = pd.DataFrame([input_data])
@@ -270,7 +270,7 @@ if submitted:
         
         # --- 结果展示区 ---
         st.markdown("###")
-        st.subheader("📊 Diagnostic Report") # 这里的文字现在会强制变成黑色
+        st.subheader("Diagnostic Report") # 这里的文字现在会强制变成黑色
         
         res_col1, res_col2, res_col3 = st.columns([1.2, 1.2, 2])
         
@@ -310,7 +310,7 @@ if submitted:
 
         # --- SHAP 可视化 ---
         st.markdown("###")
-        st.subheader("🔍 Interpretability Analysis (SHAP)") # 这里的文字现在会强制变成黑色
+        st.subheader("Interpretability Analysis (SHAP)") # 这里的文字现在会强制变成黑色
         
         # 容器背景设为白色
         with st.container():
@@ -368,6 +368,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
