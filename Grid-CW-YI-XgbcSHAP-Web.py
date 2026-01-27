@@ -80,22 +80,37 @@ with st.expander("查看当前输入数据"):
     st.dataframe(input_df)
 
 # 注意：这里的缩进必须是顶格（即没有空格），因为它不是任何函数的一部分
+# ... (前面的代码保持不变)
+
 if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
     
     st.subheader("📊 预测结果")
     
     try:
-        # 兼容性处理：尝试带列名预测，如果失败则尝试纯数值预测
-        try:
-            prediction_proba = model.predict_proba(input_df)[0]
-            prediction_class = model.predict(input_df)[0]
-        except Exception:
-            # 如果报错 missing positional argument 'X'，说明版本不兼容，改用 values 传入
-            prediction_proba = model.predict_proba(input_df.values)[0]
-            prediction_class = model.predict(input_df.values)[0]
+        # =======================================================
+        # 核心修复：通用预测逻辑 (兼容所有 XGBoost 版本)
+        # =======================================================
+        # 1. 提取底层 Booster (绕过 sklearn 接口的参数检查 bug)
+        booster = model.get_booster()
         
-        # 假设 Class 1 是阳性/患病/高风险
-        risk_score = prediction_proba[1] 
+        # 2. 将数据转换为 XGBoost 原生 DMatrix 格式
+        # 注意：DMatrix 不会报错 'missing argument X'
+        dtest = xgb.DMatrix(input_df)
+        
+        # 3. 进行预测
+        # 原生 booster.predict 直接返回正类概率 (例如 0.85)，而不是 [[0.15, 0.85]]
+        risk_score = booster.predict(dtest)
+        
+        # 处理结果格式（如果输入是多行，risk_score 是数组；如果是单行，可能是浮点数）
+        if isinstance(risk_score, np.ndarray):
+            risk_score = float(risk_score[0])
+        else:
+            risk_score = float(risk_score)
+            
+        # 手动判断类别 (默认阈值 0.5)
+        prediction_class = 1 if risk_score > 0.5 else 0
+        
+        # =======================================================
         
         # 展示结果卡片
         col1, col2 = st.columns(2)
@@ -117,22 +132,28 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
         
         try:
             with st.spinner('正在生成 SHAP 解释图...'):
-                explainer = shap.TreeExplainer(model)
+                # 对 Booster 进行解释，比对 Model 解释更稳定
+                explainer = shap.TreeExplainer(booster)
                 shap_values = explainer.shap_values(input_df)
                 
                 fig, ax = plt.subplots(figsize=(10, 3))
                 
-                # SHAP 返回值兼容性处理
+                # 针对 Booster 的 shap_values 通常直接就是数值，不需要像 classifier 那样取 [1]
+                # 这里做一个兼容性判断
                 if isinstance(shap_values, list):
-                    shap_vals_to_plot = shap_values[1][0]
-                    base_val = explainer.expected_value[1]
+                    shap_vals_to_plot = shap_values[1] # 如果意外返回了 list
                 else:
-                    shap_vals_to_plot = shap_values[0]
-                    base_val = explainer.expected_value
+                    shap_vals_to_plot = shap_values # 通常是这个
                 
-                # 兼容不同版本的 expected_value 格式
-                if isinstance(base_val, (list, np.ndarray)):
-                    base_val = base_val[0]
+                # 处理单样本维度
+                if shap_vals_to_plot.ndim > 1:
+                    shap_vals_to_plot = shap_vals_to_plot[0]
+                
+                # 获取 base_value
+                base_val = explainer.expected_value
+                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
+                     # 某些版本可能返回 list
+                     pass 
 
                 shap.plots.waterfall(shap.Explanation(values=shap_vals_to_plot, 
                                                      base_values=base_val, 
@@ -141,8 +162,8 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
                                      show=False)
                 st.pyplot(plt.gcf())
         except Exception as e_shap:
-            st.warning(f"SHAP 图无法生成 (版本兼容性问题)，但不影响预测结果。错误详情: {e_shap}")
+            st.warning(f"SHAP 图生成受阻: {e_shap}")
 
     except Exception as e:
-        st.error(f"预测过程中发生错误: {e}")
-        st.info("排查建议：如果看到 'missing 1 required positional argument'，请检查 requirements.txt 中的 xgboost 版本是否与本地一致。")
+        st.error(f"预测错误: {e}")
+        st.write("调试信息：", type(model))
