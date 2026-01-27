@@ -80,38 +80,69 @@ for feature in feature_names:
 # 将用户输入转换为 DataFrame
 input_df = pd.DataFrame([input_data])
 
-# ==========================================
-# 4. 处理输入并调用模型预测 (Prediction)
-# ==========================================
-# 在主界面展示用户当前的输入数据
-with st.expander("查看当前输入数据"):
-    st.dataframe(input_df)
+# ... (前面的代码保持不变) ...
 
-if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
-    
-    st.subheader("📊 预测结果")
-    
-    # 进行预测
-    # predict_proba 返回概率 [类0概率, 类1概率]
-    try:
-        prediction_proba = model.predict_proba(input_df)[0]
-        prediction_class = model.predict(input_df)[0]
+    # ==========================================
+    # 4. 处理输入并调用模型预测 (Prediction)
+    # ==========================================
+    if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
+        st.subheader("📊 预测结果")
         
-        # 假设 Class 1 是阳性/患病/高风险
-        risk_score = prediction_proba[1] 
-        
-        # 展示结果卡片
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="预测类别 (Class)", value=int(prediction_class))
-        with col2:
-            st.metric(label="风险概率 (Risk Probability)", value=f"{risk_score:.2%}")
+        try:
+            # --- 调试信息：如果不确定模型加载了什么，取消下面这行的注释 ---
+            # st.write(f"模型类型: {type(model)}")
+
+            # 尝试方法 A: 标准预测 (带列名)
+            try:
+                prediction_proba = model.predict_proba(input_df)[0]
+                prediction_class = model.predict(input_df)[0]
+            except Exception as e_standard:
+                # 如果标准方法失败，尝试方法 B: 纯数值预测 (不带列名)
+                # 这通常能解决版本不兼容导致的 "missing argument" 或 "feature mismatch" 问题
+                # st.warning(f"标准模式失败，尝试兼容模式... ({e_standard})")
+                prediction_proba = model.predict_proba(input_df.values)[0]
+                prediction_class = model.predict(input_df.values)[0]
+
+            # 假设 Class 1 是阳性/患病/高风险
+            risk_score = prediction_proba[1] 
             
-        # 根据概率显示不同提示
-        if risk_score > 0.5:
-            st.error("⚠️ 警告：模型预测为高风险！")
-        else:
-            st.success("✅ 提示：模型预测为低风险。")
+            # 展示结果卡片
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="预测类别 (Class)", value=int(prediction_class))
+            with col2:
+                st.metric(label="风险概率 (Risk Probability)", value=f"{risk_score:.2%}")
+                
+            if risk_score > 0.5:
+                st.error("⚠️ 警告：模型预测为高风险！")
+            else:
+                st.success("✅ 提示：模型预测为低风险。")
+
+            # SHAP 解释部分 (建议加一个 Try-Except 保护，防止 SHAP 也因版本崩掉)
+            try:
+                st.markdown("---")
+                st.subheader("🔍 模型解释 (SHAP Visualization)")
+                with st.spinner('正在生成 SHAP 解释图...'):
+                    explainer = shap.TreeExplainer(model)
+                    shap_values = explainer.shap_values(input_df)
+                    
+                    fig, ax = plt.subplots(figsize=(10, 3))
+                    # 兼容不同版本的 SHAP 返回格式
+                    vals = shap_values[1] if isinstance(shap_values, list) else shap_values
+                    base_val = explainer.expected_value[1] if isinstance(explainer.expected_value, (list, np.ndarray)) else explainer.expected_value
+                    
+                    shap.plots.waterfall(shap.Explanation(values=vals[0], 
+                                                         base_values=base_val, 
+                                                         data=input_df.iloc[0], 
+                                                         feature_names=feature_names),
+                                         show=False)
+                    st.pyplot(plt.gcf())
+            except Exception as e_shap:
+                st.warning(f"SHAP 图无法生成 (可能是版本不兼容)，但不影响预测结果。错误: {e_shap}")
+
+        except Exception as e:
+            st.error(f"❌ 严重错误: {e}")
+            st.code("建议：请检查 requirements.txt 中的 xgboost 版本是否与训练环境一致。")
 
         # ==========================================
         # 5. 展示可视化解释 (Visualization)
@@ -157,4 +188,5 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
 
 # 页脚
 st.markdown("---")
+
 st.caption("Developed for Clinical Prediction Model Research")
