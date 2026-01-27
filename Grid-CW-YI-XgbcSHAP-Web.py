@@ -7,7 +7,7 @@ import shap
 import matplotlib.pyplot as plt
 
 # ==========================================
-# 1. 高级页面配置与 CSS 美化
+# 1. 页面基础配置
 # ==========================================
 st.set_page_config(
     page_title="MCI 6-Year Risk Predictor",
@@ -16,95 +16,122 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 注入自定义 CSS
+# ==========================================
+# 2. 商业级 UI 设计 (混合主题 CSS)
+# ==========================================
 st.markdown("""
 <style>
-    /* 全局字体 */
+    /* 强制重置字体 */
     html, body, [class*="css"] {
-        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* 1. 侧边栏美化：去除突兀的白色，使用柔和的浅灰 */
+    /* --- 核心修复 1: 侧边栏改为深色高级商务风 --- */
     [data-testid="stSidebar"] {
-        background-color: #f4f5f7; /* 柔和的浅灰 */
-        border-right: 1px solid #d1d5db;
+        background-color: #0f172a; /* 深空蓝黑 */
+        border-right: 1px solid #1e293b;
+    }
+    
+    /* 侧边栏文字颜色适配深色背景 */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
+        color: #e2e8f0 !important; /* 浅灰白文字 */
+    }
+    
+    /* 修复侧边栏输入框说明文字 */
+    [data-testid="stSidebar"] .stNumberInput label, [data-testid="stSidebar"] .stSelectbox label {
+        color: #94a3b8 !important;
     }
 
-    /* 侧边栏标题 */
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #1f2937;
+    /* --- 核心修复 2: 主区域强制锁定为浅色背景 (解决看不清的问题) --- */
+    [data-testid="stAppViewContainer"] {
+        background-color: #f1f5f9; /* 柔和的浅灰背景 */
+    }
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0); /* 顶部透明 */
     }
 
-    /* 主标题样式 */
+    /* 主标题样式 (强制深色文字) */
     .main-title {
-        font-size: 2.2rem;
-        color: #111827;
-        font-weight: 700;
+        font-size: 2.5rem;
+        color: #0f172a; /* 深色文字 */
+        font-weight: 800;
+        letter-spacing: -0.02em;
         margin-bottom: 0.5rem;
     }
     .sub-title {
         font-size: 1.1rem;
-        color: #4b5563;
+        color: #475569; /* 次深色 */
+        background-color: #ffffff;
+        padding: 15px 20px;
+        border-radius: 8px;
+        border-left: 5px solid #2563eb;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         margin-bottom: 2rem;
-        padding-left: 5px;
-        border-left: 4px solid #0068c9;
     }
 
     /* 结果卡片样式 */
     .metric-card {
-        background-color: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        background-color: #ffffff; /* 强制白底 */
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         text-align: center;
-        transition: transform 0.2s;
+        transition: all 0.2s ease;
     }
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .metric-value {
-        font-size: 2.2rem;
+        font-size: 2.5rem;
         font-weight: 800;
         margin: 10px 0;
+        letter-spacing: -0.02em;
     }
     .metric-label {
-        font-size: 0.9rem;
-        color: #6b7280;
+        font-size: 0.85rem;
+        color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        font-weight: 600;
+        font-weight: 700;
     }
 
-    /* 风险颜色定义 */
-    .text-safe { color: #059669 !important; } /* 绿色 */
-    .text-risk { color: #dc2626 !important; } /* 红色 */
-    .bg-safe { background-color: #ecfdf5; border-color: #10b981; }
-    .bg-risk { background-color: #fef2f2; border-color: #ef4444; }
+    /* 状态颜色 */
+    .text-safe { color: #059669 !important; } 
+    .text-risk { color: #dc2626 !important; } 
+    .bg-safe { background-color: #ecfdf5 !important; border-color: #10b981 !important; }
+    .bg-risk { background-color: #fef2f2 !important; border-color: #ef4444 !important; }
 
     /* 按钮美化 */
     .stButton>button {
         width: 100%;
-        background-color: #2563eb;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         border-radius: 8px;
         font-weight: 600;
-        padding: 0.5rem 1rem;
+        padding: 0.6rem 1rem;
         border: none;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
     }
     .stButton>button:hover {
-        background-color: #1d4ed8;
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        transform: translateY(-1px);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 标题区
+# 3. 标题区
 # ==========================================
 col_header_1, col_header_2 = st.columns([1, 6])
 with col_header_1:
-    st.markdown("<div style='font-size: 4.5rem; text-align: center;'>🧠</div>", unsafe_allow_html=True)
+    # 增加图标容器的样式
+    st.markdown("""
+        <div style='background: white; border-radius: 100px; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: auto;'>
+            <span style='font-size: 3rem;'>🧠</span>
+        </div>
+    """, unsafe_allow_html=True)
 with col_header_2:
     st.markdown('<div class="main-title">6-Year MCI Risk Prediction System</div>', unsafe_allow_html=True)
     st.markdown("""
@@ -114,10 +141,8 @@ with col_header_2:
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown("---")
-
 # ==========================================
-# 3. 加载资源
+# 4. 加载资源
 # ==========================================
 @st.cache_resource
 def load_model():
@@ -137,69 +162,52 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 4. 侧边栏：特征输入 (逻辑优化版)
+# 5. 侧边栏：特征输入 (深色适配版)
 # ==========================================
 with st.sidebar:
-    st.header("📋 Clinical Parameters")
-    st.markdown("Please input patient details:")
+    st.title("📋 Clinical Parameters")
+    st.markdown("Please input patient details below:", unsafe_allow_html=True)
     st.markdown("---")
 
     input_data = {}
     
     with st.form("patient_data_form"):
         for feature in feature_names:
-            # 数据清洗：获取最小值、最大值、均值
             min_val = float(X_test[feature].min())
             max_val = float(X_test[feature].max())
             default_val = float(X_test[feature].mean())
-            
-            # 格式化标签显示 (去除下划线，首字母大写)
             label = feature.replace("_", " ").title()
             
-            # --- 核心修改 1: 特殊变量处理 (Marital Status) ---
-            # 模糊匹配：只要列名里包含 'marital' (忽略大小写)
+            # 1. 婚姻状况特殊处理
             if 'marital' in feature.lower():
                 st.markdown(f"**{label}**")
                 input_data[feature] = st.selectbox(
                     label,
                     options=[0, 1],
-                    index=1 if default_val > 0.5 else 0, # 默认值逻辑
+                    index=1 if default_val > 0.5 else 0,
                     format_func=lambda x: "Married & Cohabitating" if x == 1 else "Other",
-                    label_visibility="collapsed" # 隐藏重复标签
+                    label_visibility="collapsed"
                 )
             
-            # --- 核心修改 2: 整数变量处理 (Age, Cognitive Score, IADL) ---
-            # 只要列名包含这些关键字，强制设为整数输入
+            # 2. 整数变量处理
             elif any(x in feature.lower() for x in ['age', 'cognitive', 'score', 'iadl']):
-                # 针对 IADL 特殊处理范围 (假设 1-5 或 0-8)
                 if 'iadl' in feature.lower():
-                     # 这里按照您的要求：只能输入整数
-                     current_min = 0.0 # 通常 IADL 从 0 开始，您也可以设为 1
-                     current_max = 8.0 # 通常最大 8，也可以设为您的最大值
-                     current_step = 1.0
+                     current_min, current_max = 0.0, 8.0
                 else:
-                     current_min = min_val
-                     current_max = max_val
-                     current_step = 1.0
+                     current_min, current_max = min_val, max_val
 
                 input_data[feature] = st.number_input(
-                    f"{label} (Integer)",
+                    f"{label}",
                     min_value=int(current_min),
                     max_value=int(current_max),
                     value=int(default_val),
-                    step=1,          # 强制步长为 1
-                    format="%d"      # 强制显示为整数格式 (无小数点)
+                    step=1,
+                    format="%d"
                 )
 
-            # --- 二分类变量 (其他) ---
+            # 3. 其他变量
             elif X_test[feature].nunique() <= 2:
-                input_data[feature] = st.selectbox(
-                    label,
-                    options=[0, 1],
-                    index=int(default_val)
-                )
-
-            # --- 连续变量 (其他) ---
+                input_data[feature] = st.selectbox(label, options=[0, 1], index=int(default_val))
             else:
                 input_data[feature] = st.number_input(
                     label,
@@ -210,29 +218,20 @@ with st.sidebar:
                 )
         
         st.markdown("###")
-        submitted = st.form_submit_button("🚀 Run 6-Year Prediction")
+        submitted = st.form_submit_button("🚀 Run Prediction Analysis")
 
 # 转为 DataFrame
 input_df = pd.DataFrame([input_data])
 
 # ==========================================
-# 5. 预测逻辑与展示
+# 6. 预测逻辑与展示
 # ==========================================
 if submitted:
-    # 侧边栏收起提示 (可选)
-    # st.toast("Calculating...", icon="⏳")
-
     try:
-        # 1. 获取底层 Booster (避开版本兼容问题)
         booster = model.get_booster()
-        
-        # 2. 转换为 DMatrix
         dtest = xgb.DMatrix(input_df)
-        
-        # 3. 预测概率
         risk_score = booster.predict(dtest)
         
-        # 格式标准化
         if isinstance(risk_score, np.ndarray):
             risk_score = float(risk_score[0])
         else:
@@ -241,11 +240,11 @@ if submitted:
         prediction_class = 1 if risk_score > 0.5 else 0
         
         # --- 结果展示区 ---
-        st.subheader("📊 Prediction Results")
+        st.markdown("###")
+        st.subheader("📊 Diagnostic Report")
         
         res_col1, res_col2, res_col3 = st.columns([1.2, 1.2, 2])
         
-        # 样式逻辑
         theme_color = "text-risk" if prediction_class == 1 else "text-safe"
         bg_class = "bg-risk" if prediction_class == 1 else "bg-safe"
         status_text = "HIGH RISK (MCI)" if prediction_class == 1 else "LOW RISK (Normal)"
@@ -255,7 +254,7 @@ if submitted:
             <div class="metric-card {bg_class}">
                 <div class="metric-label">Predicted Outcome</div>
                 <div class="metric-value {theme_color}">{status_text}</div>
-                <div style="font-size:0.8rem; color:#666;">@ 6 Years</div>
+                <div style="font-size:0.8rem; color:#64748b;">@ 6 Years Horizon</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -264,82 +263,78 @@ if submitted:
             <div class="metric-card">
                 <div class="metric-label">Probability</div>
                 <div class="metric-value {theme_color}">{risk_score:.2%}</div>
-                <div style="font-size:0.8rem; color:#666;">Confidence Score</div>
+                <div style="font-size:0.8rem; color:#64748b;">Confidence Score</div>
             </div>
             """, unsafe_allow_html=True)
 
         with res_col3:
+            # 进度条样式
             st.markdown(f"""<div class="metric-card" style="text-align:left; padding: 25px;">
-                            <div class="metric-label" style="margin-bottom:8px;">Risk Gauge</div>
+                            <div class="metric-label" style="margin-bottom:12px;">Risk Assessment Gauge</div>
                         """, unsafe_allow_html=True)
             if risk_score > 0.5:
-                st.progress(risk_score, text="⚠️ Elevated risk of cognitive decline")
+                st.progress(risk_score, text="⚠️ Elevated risk detected")
             else:
-                st.progress(risk_score, text="✅ Likely to remain cognitively normal")
+                st.progress(risk_score, text="✅ Patient is likely to remain stable")
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # --- SHAP 可视化 (修复背景色问题) ---
+        # --- SHAP 可视化 ---
         st.markdown("###")
-        st.subheader("🔍 Personalized Risk Factors (SHAP)")
-        st.markdown("This chart explains *why* the model made this prediction based on the patient's data.")
+        st.subheader("🔍 Interpretability Analysis (SHAP)")
         
+        # 容器背景设为白色
         with st.container():
-            with st.spinner('Generating interpretability chart...'):
+            st.markdown('<div style="background-color: white; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">', unsafe_allow_html=True)
+            
+            with st.spinner('Calculating feature importance...'):
                 explainer = shap.TreeExplainer(booster)
                 shap_values = explainer.shap_values(input_df)
                 
-                # 数据兼容性处理
-                if isinstance(shap_values, list):
-                    shap_val = shap_values[1]
-                else:
-                    shap_val = shap_values
+                if isinstance(shap_values, list): shap_val = shap_values[1]
+                else: shap_val = shap_values
                 
-                if shap_val.ndim > 1:
-                    shap_val = shap_val[0]
+                if shap_val.ndim > 1: shap_val = shap_val[0]
 
                 base_val = explainer.expected_value
-                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
-                    pass 
+                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1: pass 
 
-                # --- 核心修改 3: 强制设置 Matplotlib 白底样式 ---
-                # 这样可以保证在 Streamlit 的深色模式下，图表依然是白底黑字，清晰可见
+                # 绘图设置
                 plt.style.use('default') 
                 fig, ax = plt.subplots(figsize=(10, 5))
-                
-                # 设置图表背景为白色，字体为黑色
-                fig.patch.set_facecolor('white')
+                fig.patch.set_facecolor('white') # 强制白底
                 ax.set_facecolor('white')
                 
-                # 绘制瀑布图
                 shap.plots.waterfall(shap.Explanation(values=shap_val, 
                                                      base_values=base_val, 
                                                      data=input_df.iloc[0], 
                                                      feature_names=feature_names),
                                      show=False)
                 
-                # 再次确保坐标轴颜色正确
-                plt.rcParams['text.color'] = 'black'
-                plt.rcParams['axes.labelcolor'] = 'black'
-                plt.rcParams['xtick.color'] = 'black'
-                plt.rcParams['ytick.color'] = 'black'
+                # 强制字体黑色
+                plt.rcParams['text.color'] = '#0f172a'
+                plt.rcParams['axes.labelcolor'] = '#0f172a'
+                plt.rcParams['xtick.color'] = '#0f172a'
+                plt.rcParams['ytick.color'] = '#0f172a'
                 
                 st.pyplot(fig, use_container_width=True)
-                st.caption("Red bars increase MCI risk; Blue bars decrease MCI risk.")
+                st.caption("Chart Guide: Red bars push risk HIGHER, Blue bars push risk LOWER.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Prediction Error: {e}")
 
 else:
-    st.info("👈 Please enter the 6-year baseline data in the sidebar and click 'Run 6-Year Prediction'.")
+    # 初始状态提示
+    st.info("👈 Please enter patient data in the sidebar and click 'Run Prediction Analysis' to start.")
 
 # ==========================================
-# 6. 页脚
+# 7. 页脚
 # ==========================================
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #9ca3af; font-size: 0.8rem;'>
-    <strong>Research Use Only.</strong> This model estimates the 6-year risk of Mild Cognitive Impairment (MCI).<br>
-    It assumes the subject is currently cognitively normal. Not for clinical diagnosis.
-    <br>© 2026 MCI Prediction Research Group
+<div style='text-align: center; color: #94a3b8; font-size: 0.8rem; padding-bottom: 20px;'>
+    <strong>Research Prototype.</strong> Not for clinical diagnosis.<br>
+    © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
