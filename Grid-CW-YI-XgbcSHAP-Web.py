@@ -189,7 +189,7 @@ except Exception as e:
 # ==========================================
 feature_map = {
         "Baseline Cognitive": "Baseline Cognitive Score",
-        "iadl": "IADL Impairment Count"
+        "Iadl": "IADL Impairment Count"
     }
 
 
@@ -368,6 +368,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
