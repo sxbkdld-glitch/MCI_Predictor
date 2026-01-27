@@ -209,6 +209,7 @@ with st.sidebar:
             
             # 1. 婚姻状况特殊处理
             if 'marital' in feature.lower():
+                st.markdown(f"**{label}**")
                 input_data[feature] = st.selectbox(
                     label,
                     options=[0, 1],
@@ -367,6 +368,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
