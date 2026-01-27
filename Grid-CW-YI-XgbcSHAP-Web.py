@@ -7,121 +7,124 @@ import shap
 import matplotlib.pyplot as plt
 
 # ==========================================
-# 1. Advanced Page Configuration & CSS
+# 1. 高级页面配置与 CSS 美化
 # ==========================================
 st.set_page_config(
-    page_title="MCI Clinical Predictor",
-    page_icon="⚕️",
+    page_title="MCI 6-Year Risk Predictor",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Commercial-Grade UI
+# 注入自定义 CSS
 st.markdown("""
 <style>
-    /* Main Background & Font */
-    .reportview-container {
-        background: #f0f2f6;
-    }
-    
-    /* Header Styling */
-    h1 {
-        color: #0e1117;
-        font-family: 'Helvetica Neue', sans-serif;
-        font-weight: 700;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #e6e9ef;
-    }
-    h2, h3 {
-        color: #262730;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    
-    /* Card Styling */
-    .metric-card {
-        background-color: #ffffff;
-        border: 1px solid #e6e9ef;
-        border-radius: 8px;
-        padding: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    .metric-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #0068c9;
-    }
-    .metric-label {
-        font-size: 1rem;
-        color: #6c757d;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* High Risk Warning Style */
-    .risk-high {
-        color: #ff4b4b !important;
-    }
-    
-    /* Low Risk Success Style */
-    .risk-low {
-        color: #09ab3b !important;
+    /* 全局字体 */
+    html, body, [class*="css"] {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* Button Styling */
+    /* 1. 侧边栏美化：去除突兀的白色，使用柔和的浅灰 */
+    [data-testid="stSidebar"] {
+        background-color: #f4f5f7; /* 柔和的浅灰 */
+        border-right: 1px solid #d1d5db;
+    }
+
+    /* 侧边栏标题 */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #1f2937;
+    }
+
+    /* 主标题样式 */
+    .main-title {
+        font-size: 2.2rem;
+        color: #111827;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .sub-title {
+        font-size: 1.1rem;
+        color: #4b5563;
+        margin-bottom: 2rem;
+        padding-left: 5px;
+        border-left: 4px solid #0068c9;
+    }
+
+    /* 结果卡片样式 */
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        text-align: center;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 10px 0;
+    }
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    /* 风险颜色定义 */
+    .text-safe { color: #059669 !important; } /* 绿色 */
+    .text-risk { color: #dc2626 !important; } /* 红色 */
+    .bg-safe { background-color: #ecfdf5; border-color: #10b981; }
+    .bg-risk { background-color: #fef2f2; border-color: #ef4444; }
+
+    /* 按钮美化 */
     .stButton>button {
         width: 100%;
-        border-radius: 6px;
-        font-weight: 600;
-        height: 3em;
-        background-color: #0068c9;
+        background-color: #2563eb;
         color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
         border: none;
     }
     .stButton>button:hover {
-        background-color: #0053a0;
-        border: none;
-        color: white;
-    }
-    
-    /* Sidebar styling */
-    section[data-testid="stSidebar"] {
-        background-color: #f8f9fa;
-        border-right: 1px solid #e6e9ef;
+        background-color: #1d4ed8;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. Header Section
+# 2. 标题区
 # ==========================================
-col_logo, col_title = st.columns([1, 5])
-
-with col_logo:
-    # Placeholder for a medical logo (using emoji for now)
-    st.markdown("<div style='font-size: 4rem; text-align: center;'>⚕️</div>", unsafe_allow_html=True)
-
-with col_title:
-    st.title("MCI Clinical Prediction System")
+col_header_1, col_header_2 = st.columns([1, 6])
+with col_header_1:
+    st.markdown("<div style='font-size: 4.5rem; text-align: center;'>🧠</div>", unsafe_allow_html=True)
+with col_header_2:
+    st.markdown('<div class="main-title">6-Year MCI Risk Prediction System</div>', unsafe_allow_html=True)
     st.markdown("""
-    **Artificial Intelligence / XGBoost Engine** This application utilizes advanced machine learning algorithms to predict the probability of adverse clinical outcomes based on patient biomarkers and demographics.
-    """)
+    <div class="sub-title">
+        <b>Target Population:</b> Currently cognitively normal individuals.<br>
+        <b>Objective:</b> Predict the probability of developing Mild Cognitive Impairment (MCI) within 6 years.
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
 # ==========================================
-# 3. Resource Loading (Model & Data)
+# 3. 加载资源
 # ==========================================
 @st.cache_resource
 def load_model():
-    # Load the XGBoost model
     return joblib.load('XGBC.pkl')
 
 @st.cache_data
 def load_data():
-    # Load test data for feature schema
     return pd.read_csv('X_test.csv')
 
 try:
@@ -129,79 +132,107 @@ try:
     X_test = load_data()
     feature_names = X_test.columns.tolist()
 except Exception as e:
-    st.error("System Initialization Failed")
-    st.error(f"Error details: {e}")
-    st.info("Ensure 'XGBC.pkl' and 'X_test.csv' are in the root directory.")
+    st.error("System Initialization Error")
+    st.info("Please ensure 'XGBC.pkl' and 'X_test.csv' are uploaded.")
     st.stop()
 
 # ==========================================
-# 4. Sidebar: Patient Configuration
+# 4. 侧边栏：特征输入 (逻辑优化版)
 # ==========================================
 with st.sidebar:
-    st.header("📋 Patient Configuration")
-    st.markdown("Configure clinical parameters below:")
+    st.header("📋 Clinical Parameters")
+    st.markdown("Please input patient details:")
     st.markdown("---")
 
     input_data = {}
     
-    # Create a form to group inputs
     with st.form("patient_data_form"):
-        # Iterate features and generate appropriate inputs
         for feature in feature_names:
+            # 数据清洗：获取最小值、最大值、均值
             min_val = float(X_test[feature].min())
             max_val = float(X_test[feature].max())
             default_val = float(X_test[feature].mean())
             
-            # Formatting the label for better readability (Replacing underscores)
+            # 格式化标签显示 (去除下划线，首字母大写)
             label = feature.replace("_", " ").title()
-
-            if X_test[feature].nunique() <= 2:
-                # Binary features
+            
+            # --- 核心修改 1: 特殊变量处理 (Marital Status) ---
+            # 模糊匹配：只要列名里包含 'marital' (忽略大小写)
+            if 'marital' in feature.lower():
+                st.markdown(f"**{label}**")
                 input_data[feature] = st.selectbox(
                     label,
                     options=[0, 1],
-                    index=int(default_val),
-                    help=f"Select binary value for {label}"
+                    index=1 if default_val > 0.5 else 0, # 默认值逻辑
+                    format_func=lambda x: "Married & Cohabitating" if x == 1 else "Other",
+                    label_visibility="collapsed" # 隐藏重复标签
                 )
+            
+            # --- 核心修改 2: 整数变量处理 (Age, Cognitive Score, IADL) ---
+            # 只要列名包含这些关键字，强制设为整数输入
+            elif any(x in feature.lower() for x in ['age', 'cognitive', 'score', 'iadl']):
+                # 针对 IADL 特殊处理范围 (假设 1-5 或 0-8)
+                if 'iadl' in feature.lower():
+                     # 这里按照您的要求：只能输入整数
+                     current_min = 0.0 # 通常 IADL 从 0 开始，您也可以设为 1
+                     current_max = 8.0 # 通常最大 8，也可以设为您的最大值
+                     current_step = 1.0
+                else:
+                     current_min = min_val
+                     current_max = max_val
+                     current_step = 1.0
+
+                input_data[feature] = st.number_input(
+                    f"{label} (Integer)",
+                    min_value=int(current_min),
+                    max_value=int(current_max),
+                    value=int(default_val),
+                    step=1,          # 强制步长为 1
+                    format="%d"      # 强制显示为整数格式 (无小数点)
+                )
+
+            # --- 二分类变量 (其他) ---
+            elif X_test[feature].nunique() <= 2:
+                input_data[feature] = st.selectbox(
+                    label,
+                    options=[0, 1],
+                    index=int(default_val)
+                )
+
+            # --- 连续变量 (其他) ---
             else:
-                # Continuous features
                 input_data[feature] = st.number_input(
                     label,
                     min_value=min_val,
                     max_value=max_val,
                     value=default_val,
-                    format="%.2f",
-                    help=f"Range: {min_val:.2f} - {max_val:.2f}"
+                    format="%.2f"
                 )
         
         st.markdown("###")
-        # The Run button is now inside the sidebar form
-        submitted = st.form_submit_button("🚀 Run Analysis")
+        submitted = st.form_submit_button("🚀 Run 6-Year Prediction")
 
-# Convert input to DataFrame
+# 转为 DataFrame
 input_df = pd.DataFrame([input_data])
 
 # ==========================================
-# 5. Main Dashboard Logic
+# 5. 预测逻辑与展示
 # ==========================================
-
-# Display input summary in an expander
-with st.expander("📊 View Current Patient Profile (Input Data)"):
-    st.dataframe(input_df, hide_index=True)
-
 if submitted:
-    # --- Prediction Logic ---
+    # 侧边栏收起提示 (可选)
+    # st.toast("Calculating...", icon="⏳")
+
     try:
-        # 1. Get underlying booster to bypass sklearn version mismatch
+        # 1. 获取底层 Booster (避开版本兼容问题)
         booster = model.get_booster()
         
-        # 2. Convert to DMatrix (Standard XGBoost format)
+        # 2. 转换为 DMatrix
         dtest = xgb.DMatrix(input_df)
         
-        # 3. Predict
+        # 3. 预测概率
         risk_score = booster.predict(dtest)
         
-        # Handle format
+        # 格式标准化
         if isinstance(risk_score, np.ndarray):
             risk_score = float(risk_score[0])
         else:
@@ -209,107 +240,106 @@ if submitted:
             
         prediction_class = 1 if risk_score > 0.5 else 0
         
-        # --- UI: Results Dashboard ---
-        st.subheader("Diagnostics Result")
+        # --- 结果展示区 ---
+        st.subheader("📊 Prediction Results")
         
-        # Layout for results
-        res_col1, res_col2, res_col3 = st.columns([1, 1, 2])
+        res_col1, res_col2, res_col3 = st.columns([1.2, 1.2, 2])
+        
+        # 样式逻辑
+        theme_color = "text-risk" if prediction_class == 1 else "text-safe"
+        bg_class = "bg-risk" if prediction_class == 1 else "bg-safe"
+        status_text = "HIGH RISK (MCI)" if prediction_class == 1 else "LOW RISK (Normal)"
         
         with res_col1:
-            # Custom HTML Card for Class
-            class_color = "risk-high" if prediction_class == 1 else "risk-low"
-            class_label = "POSITIVE (Risk)" if prediction_class == 1 else "NEGATIVE (Safe)"
-            
             st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">Prediction</div>
-                <div class="metric-value {class_color}">{class_label}</div>
+            <div class="metric-card {bg_class}">
+                <div class="metric-label">Predicted Outcome</div>
+                <div class="metric-value {theme_color}">{status_text}</div>
+                <div style="font-size:0.8rem; color:#666;">@ 6 Years</div>
             </div>
             """, unsafe_allow_html=True)
             
         with res_col2:
-            # Custom HTML Card for Probability
-            prob_color = "risk-high" if risk_score > 0.5 else "risk-low"
-            
             st.markdown(f"""
             <div class="metric-card">
                 <div class="metric-label">Probability</div>
-                <div class="metric-value {prob_color}">{risk_score:.2%}</div>
+                <div class="metric-value {theme_color}">{risk_score:.2%}</div>
+                <div style="font-size:0.8rem; color:#666;">Confidence Score</div>
             </div>
             """, unsafe_allow_html=True)
 
         with res_col3:
-            # Progress Bar Visualization
-            st.markdown(f"""<div class="metric-card" style="text-align:left; padding-top:25px;">
-                            <div class="metric-label" style="margin-bottom:10px;">Risk Assessment Gauge</div>
+            st.markdown(f"""<div class="metric-card" style="text-align:left; padding: 25px;">
+                            <div class="metric-label" style="margin-bottom:8px;">Risk Gauge</div>
                         """, unsafe_allow_html=True)
-            
             if risk_score > 0.5:
-                st.progress(risk_score, text="⚠️ High Risk Detected")
+                st.progress(risk_score, text="⚠️ Elevated risk of cognitive decline")
             else:
-                st.progress(risk_score, text="✅ Low Risk Profile")
+                st.progress(risk_score, text="✅ Likely to remain cognitively normal")
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # --- Explainability Section (SHAP) ---
+        # --- SHAP 可视化 (修复背景色问题) ---
         st.markdown("###")
-        st.subheader("🔍 Model Explainability (SHAP Analysis)")
-        st.markdown("The following chart illustrates how each feature contributed to the final risk score.")
+        st.subheader("🔍 Personalized Risk Factors (SHAP)")
+        st.markdown("This chart explains *why* the model made this prediction based on the patient's data.")
         
         with st.container():
-            with st.spinner('Calculating feature contributions...'):
-                try:
-                    explainer = shap.TreeExplainer(booster)
-                    shap_values = explainer.shap_values(input_df)
-                    
-                    # Compatibility handling for SHAP return types
-                    if isinstance(shap_values, list):
-                        shap_vals_to_plot = shap_values[1]
-                    else:
-                        shap_vals_to_plot = shap_values
-                    
-                    if shap_vals_to_plot.ndim > 1:
-                        shap_vals_to_plot = shap_vals_to_plot[0]
-                    
-                    base_val = explainer.expected_value
-                    if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
-                        pass # Handle list if necessary
-                        
-                    # Visualization configuration
-                    plt.style.use('default') 
-                    fig, ax = plt.subplots(figsize=(10, 4))
-                    
-                    # Generate Waterfall plot
-                    shap.plots.waterfall(shap.Explanation(values=shap_vals_to_plot, 
-                                                         base_values=base_val, 
-                                                         data=input_df.iloc[0], 
-                                                         feature_names=feature_names),
-                                         show=False)
-                    
-                    # Customize plot to blend with UI
-                    plt.gcf().set_facecolor('none') # Transparent background
-                    plt.gca().set_facecolor('none')
-                    
-                    st.pyplot(plt.gcf(), use_container_width=True)
-                    
-                except Exception as e_shap:
-                    st.warning(f"Could not generate SHAP visualization: {e_shap}")
-                    
+            with st.spinner('Generating interpretability chart...'):
+                explainer = shap.TreeExplainer(booster)
+                shap_values = explainer.shap_values(input_df)
+                
+                # 数据兼容性处理
+                if isinstance(shap_values, list):
+                    shap_val = shap_values[1]
+                else:
+                    shap_val = shap_values
+                
+                if shap_val.ndim > 1:
+                    shap_val = shap_val[0]
+
+                base_val = explainer.expected_value
+                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
+                    pass 
+
+                # --- 核心修改 3: 强制设置 Matplotlib 白底样式 ---
+                # 这样可以保证在 Streamlit 的深色模式下，图表依然是白底黑字，清晰可见
+                plt.style.use('default') 
+                fig, ax = plt.subplots(figsize=(10, 5))
+                
+                # 设置图表背景为白色，字体为黑色
+                fig.patch.set_facecolor('white')
+                ax.set_facecolor('white')
+                
+                # 绘制瀑布图
+                shap.plots.waterfall(shap.Explanation(values=shap_val, 
+                                                     base_values=base_val, 
+                                                     data=input_df.iloc[0], 
+                                                     feature_names=feature_names),
+                                     show=False)
+                
+                # 再次确保坐标轴颜色正确
+                plt.rcParams['text.color'] = 'black'
+                plt.rcParams['axes.labelcolor'] = 'black'
+                plt.rcParams['xtick.color'] = 'black'
+                plt.rcParams['ytick.color'] = 'black'
+                
+                st.pyplot(fig, use_container_width=True)
+                st.caption("Red bars increase MCI risk; Blue bars decrease MCI risk.")
+
     except Exception as e:
         st.error(f"Prediction Error: {e}")
-        st.code(f"Debug Info: {type(model)}")
 
 else:
-    # Initial State Prompt
-    st.info("👈 Please configure patient parameters in the sidebar and click 'Run Analysis'.")
+    st.info("👈 Please enter the 6-year baseline data in the sidebar and click 'Run 6-Year Prediction'.")
 
 # ==========================================
-# 6. Footer / Disclaimer
+# 6. 页脚
 # ==========================================
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center; color: #6c757d; font-size: 0.8rem;'>
-    <strong>Disclaimer:</strong> This tool is for research and demonstration purposes only. 
-    It is not intended to replace professional medical advice, diagnosis, or treatment.
-    <br>Developed for MCI Research Project © 2026
+<div style='text-align: center; color: #9ca3af; font-size: 0.8rem;'>
+    <strong>Research Use Only.</strong> This model estimates the 6-year risk of Mild Cognitive Impairment (MCI).<br>
+    It assumes the subject is currently cognitively normal. Not for clinical diagnosis.
+    <br>© 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
