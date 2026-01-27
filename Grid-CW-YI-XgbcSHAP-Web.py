@@ -25,6 +25,9 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
     }
+    [data-testid="InputInstructions"] {
+        display: none !important;
+    }
 
     /* --------------------------------------------------- */
     /* 核心修复区：解决文字看不清的问题 */
@@ -145,9 +148,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-[data-testid="InputInstructions"] {
-        display: none !important;
-    }
+
 # ==========================================
 # 3. 标题区
 # ==========================================
@@ -371,6 +372,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
