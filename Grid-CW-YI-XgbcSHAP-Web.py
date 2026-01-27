@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. 商业级 UI 设计 (混合主题 CSS)
+# 2. 商业级 UI 设计 (颜色深度修复版)
 # ==========================================
 st.markdown("""
 <style>
@@ -26,41 +26,69 @@ st.markdown("""
         font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
     }
 
-    /* --- 核心修复 1: 侧边栏改为深色高级商务风 --- */
+    /* --------------------------------------------------- */
+    /* 核心修复区：解决文字看不清的问题 */
+    /* --------------------------------------------------- */
+    
+    /* 1. 强制主区域的所有各级标题为黑色 */
+    [data-testid="stAppViewContainer"] h1, 
+    [data-testid="stAppViewContainer"] h2, 
+    [data-testid="stAppViewContainer"] h3, 
+    [data-testid="stAppViewContainer"] h4 {
+        color: #000000 !important; /* 纯黑 */
+    }
+
+    /* 2. 特别修复：进度条上方的文字 (Elevated risk detected) */
+    [data-testid="stAppViewContainer"] .stProgress p {
+        color: #000000 !important; /* 纯黑 */
+        font-weight: 600 !important; /* 加粗，更清晰 */
+        font-size: 1rem !important;
+    }
+
+    /* --------------------------------------------------- */
+    /* 侧边栏样式 (保持深色高级感) */
+    /* --------------------------------------------------- */
     [data-testid="stSidebar"] {
         background-color: #0f172a; /* 深空蓝黑 */
         border-right: 1px solid #1e293b;
     }
     
-    /* 侧边栏文字颜色适配深色背景 */
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
-        color: #e2e8f0 !important; /* 浅灰白文字 */
+    /* 侧边栏标题必须保持白色 (否则看不见) */
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #f8fafc !important; 
     }
     
-    /* 修复侧边栏输入框说明文字 */
+    /* 侧边栏普通文字 */
+    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
+        color: #cbd5e1 !important; 
+    }
+    
+    /* 侧边栏输入框说明文字 */
     [data-testid="stSidebar"] .stNumberInput label, [data-testid="stSidebar"] .stSelectbox label {
         color: #94a3b8 !important;
     }
 
-    /* --- 核心修复 2: 主区域强制锁定为浅色背景 (解决看不清的问题) --- */
+    /* --------------------------------------------------- */
+    /* 主区域样式 (强制浅色背景) */
+    /* --------------------------------------------------- */
     [data-testid="stAppViewContainer"] {
-        background-color: #f1f5f9; /* 柔和的浅灰背景 */
+        background-color: #f8fafc; /* 极浅灰白背景 */
     }
     [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0); /* 顶部透明 */
+        background-color: rgba(0,0,0,0);
     }
 
-    /* 主标题样式 (强制深色文字) */
+    /* 主标题样式 */
     .main-title {
         font-size: 2.5rem;
-        color: #0f172a; /* 深色文字 */
+        color: #0f172a !important; /* 深色文字 */
         font-weight: 800;
         letter-spacing: -0.02em;
         margin-bottom: 0.5rem;
     }
     .sub-title {
         font-size: 1.1rem;
-        color: #475569; /* 次深色 */
+        color: #334155 !important; /* 深灰文字 */
         background-color: #ffffff;
         padding: 15px 20px;
         border-radius: 8px;
@@ -75,13 +103,9 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         text-align: center;
         transition: all 0.2s ease;
-    }
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
     .metric-value {
         font-size: 2.5rem;
@@ -126,7 +150,6 @@ st.markdown("""
 # ==========================================
 col_header_1, col_header_2 = st.columns([1, 6])
 with col_header_1:
-    # 增加图标容器的样式
     st.markdown("""
         <div style='background: white; border-radius: 100px; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: auto;'>
             <span style='font-size: 3rem;'>🧠</span>
@@ -241,7 +264,7 @@ if submitted:
         
         # --- 结果展示区 ---
         st.markdown("###")
-        st.subheader("📊 Diagnostic Report")
+        st.subheader("📊 Diagnostic Report") # 这里的文字现在会强制变成黑色
         
         res_col1, res_col2, res_col3 = st.columns([1.2, 1.2, 2])
         
@@ -268,11 +291,12 @@ if submitted:
             """, unsafe_allow_html=True)
 
         with res_col3:
-            # 进度条样式
+            # 进度条
             st.markdown(f"""<div class="metric-card" style="text-align:left; padding: 25px;">
                             <div class="metric-label" style="margin-bottom:12px;">Risk Assessment Gauge</div>
                         """, unsafe_allow_html=True)
             if risk_score > 0.5:
+                # 这里的文字现在会强制变成黑色加粗
                 st.progress(risk_score, text="⚠️ Elevated risk detected")
             else:
                 st.progress(risk_score, text="✅ Patient is likely to remain stable")
@@ -280,7 +304,7 @@ if submitted:
 
         # --- SHAP 可视化 ---
         st.markdown("###")
-        st.subheader("🔍 Interpretability Analysis (SHAP)")
+        st.subheader("🔍 Interpretability Analysis (SHAP)") # 这里的文字现在会强制变成黑色
         
         # 容器背景设为白色
         with st.container():
@@ -310,11 +334,11 @@ if submitted:
                                                      feature_names=feature_names),
                                      show=False)
                 
-                # 强制字体黑色
-                plt.rcParams['text.color'] = '#0f172a'
-                plt.rcParams['axes.labelcolor'] = '#0f172a'
-                plt.rcParams['xtick.color'] = '#0f172a'
-                plt.rcParams['ytick.color'] = '#0f172a'
+                # 强制坐标轴和文字为黑色 (解决看不清的问题)
+                plt.rcParams['text.color'] = '#000000'
+                plt.rcParams['axes.labelcolor'] = '#000000'
+                plt.rcParams['xtick.color'] = '#000000'
+                plt.rcParams['ytick.color'] = '#000000'
                 
                 st.pyplot(fig, use_container_width=True)
                 st.caption("Chart Guide: Red bars push risk HIGHER, Blue bars push risk LOWER.")
