@@ -214,8 +214,8 @@ with st.sidebar:
                     label,
                     options=[0, 1],
                     index=1 if default_val > 0.5 else 0,
-                    format_func=lambda x: "Married & Cohabitating" if x == 1 else "Other",
-                    label_visibility="collapsed"
+                    format_func=lambda x: "Married & Cohabitating" if x == 1 else "Other"
+                   
                 )
             
             # 2. 整数变量处理
@@ -368,6 +368,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
