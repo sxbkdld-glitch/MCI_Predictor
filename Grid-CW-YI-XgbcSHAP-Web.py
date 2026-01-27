@@ -145,6 +145,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+[data-testid="InputInstructions"] {
+        display: none !important;
+    }
 # ==========================================
 # 3. 标题区
 # ==========================================
@@ -368,6 +371,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
