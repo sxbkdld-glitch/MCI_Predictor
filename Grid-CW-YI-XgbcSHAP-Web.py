@@ -270,7 +270,7 @@ if submitted:
         
         theme_color = "text-risk" if prediction_class == 1 else "text-safe"
         bg_class = "bg-risk" if prediction_class == 1 else "bg-safe"
-        status_text = "HIGH RISK (MCI)" if prediction_class == 1 else "LOW RISK (Normal)"
+        status_text = "HIGH RISK" if prediction_class == 1 else "LOW RISK"
         
         with res_col1:
             st.markdown(f"""
@@ -362,3 +362,4 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
