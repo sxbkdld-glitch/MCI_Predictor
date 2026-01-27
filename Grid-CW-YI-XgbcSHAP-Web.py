@@ -270,7 +270,7 @@ if submitted:
         else:
             risk_score = float(risk_score)
             
-        prediction_class = 1 if risk_score > 0.5 else 0
+        prediction_class = 1 if risk_score > 0.46 else 0
         
         # --- 结果展示区 ---
         st.markdown("###")
@@ -372,6 +372,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
