@@ -7,163 +7,309 @@ import shap
 import matplotlib.pyplot as plt
 
 # ==========================================
-# 1. 页面配置 (Page Configuration)
+# 1. Advanced Page Configuration & CSS
 # ==========================================
 st.set_page_config(
-    page_title="临床预测模型 Web 应用",
-    page_icon="🏥",
-    layout="wide"
+    page_title="MCI Clinical Predictor",
+    page_icon="⚕️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.title("🏥 机器学习临床预测模型演示")
-st.markdown("该应用基于 XGBoost 构建，用于根据患者特征预测风险概率。")
+# Custom CSS for Commercial-Grade UI
+st.markdown("""
+<style>
+    /* Main Background & Font */
+    .reportview-container {
+        background: #f0f2f6;
+    }
+    
+    /* Header Styling */
+    h1 {
+        color: #0e1117;
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: 700;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e6e9ef;
+    }
+    h2, h3 {
+        color: #262730;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    
+    /* Card Styling */
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid #e6e9ef;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #0068c9;
+    }
+    .metric-label {
+        font-size: 1rem;
+        color: #6c757d;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    /* High Risk Warning Style */
+    .risk-high {
+        color: #ff4b4b !important;
+    }
+    
+    /* Low Risk Success Style */
+    .risk-low {
+        color: #09ab3b !important;
+    }
+
+    /* Button Styling */
+    .stButton>button {
+        width: 100%;
+        border-radius: 6px;
+        font-weight: 600;
+        height: 3em;
+        background-color: #0068c9;
+        color: white;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #0053a0;
+        border: none;
+        color: white;
+    }
+    
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #f8f9fa;
+        border-right: 1px solid #e6e9ef;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================
-# 2. 加载模型与数据 (Load Model & Data)
+# 2. Header Section
+# ==========================================
+col_logo, col_title = st.columns([1, 5])
+
+with col_logo:
+    # Placeholder for a medical logo (using emoji for now)
+    st.markdown("<div style='font-size: 4rem; text-align: center;'>⚕️</div>", unsafe_allow_html=True)
+
+with col_title:
+    st.title("MCI Clinical Prediction System")
+    st.markdown("""
+    **Artificial Intelligence / XGBoost Engine** This application utilizes advanced machine learning algorithms to predict the probability of adverse clinical outcomes based on patient biomarkers and demographics.
+    """)
+
+st.markdown("---")
+
+# ==========================================
+# 3. Resource Loading (Model & Data)
 # ==========================================
 @st.cache_resource
 def load_model():
-    # 加载您的 XGBoost 模型
-    model = joblib.load('XGBC.pkl')
-    return model
+    # Load the XGBoost model
+    return joblib.load('XGBC.pkl')
 
 @st.cache_data
 def load_data():
-    # 加载测试集数据，用于获取特征名称和范围
-    data = pd.read_csv('X_test.csv')
-    return data
+    # Load test data for feature schema
+    return pd.read_csv('X_test.csv')
 
 try:
     model = load_model()
     X_test = load_data()
     feature_names = X_test.columns.tolist()
-    st.success("✅ 模型与数据加载成功！")
 except Exception as e:
-    st.error(f"加载文件失败，请检查目录下是否存在 'XGBC.pkl' 和 'X_test.csv'。错误信息: {e}")
+    st.error("System Initialization Failed")
+    st.error(f"Error details: {e}")
+    st.info("Ensure 'XGBC.pkl' and 'X_test.csv' are in the root directory.")
     st.stop()
 
 # ==========================================
-# 3. 设计用户输入界面 (User Input Interface)
+# 4. Sidebar: Patient Configuration
 # ==========================================
-st.sidebar.header("📋 请输入特征参数")
-st.sidebar.markdown("请在下方调整各个特征的数值：")
+with st.sidebar:
+    st.header("📋 Patient Configuration")
+    st.markdown("Configure clinical parameters below:")
+    st.markdown("---")
 
-input_data = {}
-
-for feature in feature_names:
-    min_val = float(X_test[feature].min())
-    max_val = float(X_test[feature].max())
-    default_val = float(X_test[feature].mean())
+    input_data = {}
     
-    if X_test[feature].nunique() <= 2:
-        input_data[feature] = st.sidebar.selectbox(
-            f"{feature}",
-            options=[0, 1],
-            index=int(default_val)
-        )
-    else:
-        input_data[feature] = st.sidebar.number_input(
-            f"{feature}",
-            min_value=min_val,
-            max_value=max_val,
-            value=default_val,
-            format="%.2f"
-        )
+    # Create a form to group inputs
+    with st.form("patient_data_form"):
+        # Iterate features and generate appropriate inputs
+        for feature in feature_names:
+            min_val = float(X_test[feature].min())
+            max_val = float(X_test[feature].max())
+            default_val = float(X_test[feature].mean())
+            
+            # Formatting the label for better readability (Replacing underscores)
+            label = feature.replace("_", " ").title()
 
-# 将用户输入转换为 DataFrame
+            if X_test[feature].nunique() <= 2:
+                # Binary features
+                input_data[feature] = st.selectbox(
+                    label,
+                    options=[0, 1],
+                    index=int(default_val),
+                    help=f"Select binary value for {label}"
+                )
+            else:
+                # Continuous features
+                input_data[feature] = st.number_input(
+                    label,
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=default_val,
+                    format="%.2f",
+                    help=f"Range: {min_val:.2f} - {max_val:.2f}"
+                )
+        
+        st.markdown("###")
+        # The Run button is now inside the sidebar form
+        submitted = st.form_submit_button("🚀 Run Analysis")
+
+# Convert input to DataFrame
 input_df = pd.DataFrame([input_data])
 
 # ==========================================
-# 4. 处理输入并调用模型预测 (Prediction)
+# 5. Main Dashboard Logic
 # ==========================================
-with st.expander("查看当前输入数据"):
-    st.dataframe(input_df)
 
-# 注意：这里的缩进必须是顶格（即没有空格），因为它不是任何函数的一部分
-# ... (前面的代码保持不变)
+# Display input summary in an expander
+with st.expander("📊 View Current Patient Profile (Input Data)"):
+    st.dataframe(input_df, hide_index=True)
 
-if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
-    
-    st.subheader("📊 预测结果")
-    
+if submitted:
+    # --- Prediction Logic ---
     try:
-        # =======================================================
-        # 核心修复：通用预测逻辑 (兼容所有 XGBoost 版本)
-        # =======================================================
-        # 1. 提取底层 Booster (绕过 sklearn 接口的参数检查 bug)
+        # 1. Get underlying booster to bypass sklearn version mismatch
         booster = model.get_booster()
         
-        # 2. 将数据转换为 XGBoost 原生 DMatrix 格式
-        # 注意：DMatrix 不会报错 'missing argument X'
+        # 2. Convert to DMatrix (Standard XGBoost format)
         dtest = xgb.DMatrix(input_df)
         
-        # 3. 进行预测
-        # 原生 booster.predict 直接返回正类概率 (例如 0.85)，而不是 [[0.15, 0.85]]
+        # 3. Predict
         risk_score = booster.predict(dtest)
         
-        # 处理结果格式（如果输入是多行，risk_score 是数组；如果是单行，可能是浮点数）
+        # Handle format
         if isinstance(risk_score, np.ndarray):
             risk_score = float(risk_score[0])
         else:
             risk_score = float(risk_score)
             
-        # 手动判断类别 (默认阈值 0.5)
         prediction_class = 1 if risk_score > 0.5 else 0
         
-        # =======================================================
+        # --- UI: Results Dashboard ---
+        st.subheader("Diagnostics Result")
         
-        # 展示结果卡片
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="预测类别 (Class)", value=int(prediction_class))
-        with col2:
-            st.metric(label="风险概率 (Risk Probability)", value=f"{risk_score:.2%}")
+        # Layout for results
+        res_col1, res_col2, res_col3 = st.columns([1, 1, 2])
+        
+        with res_col1:
+            # Custom HTML Card for Class
+            class_color = "risk-high" if prediction_class == 1 else "risk-low"
+            class_label = "POSITIVE (Risk)" if prediction_class == 1 else "NEGATIVE (Safe)"
             
-        if risk_score > 0.5:
-            st.error("⚠️ 警告：模型预测为高风险！")
-        else:
-            st.success("✅ 提示：模型预测为低风险。")
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">Prediction</div>
+                <div class="metric-value {class_color}">{class_label}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with res_col2:
+            # Custom HTML Card for Probability
+            prob_color = "risk-high" if risk_score > 0.5 else "risk-low"
+            
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">Probability</div>
+                <div class="metric-value {prob_color}">{risk_score:.2%}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        # ==========================================
-        # 5. 展示可视化解释 (Visualization)
-        # ==========================================
-        st.markdown("---")
-        st.subheader("🔍 模型解释 (SHAP Visualization)")
+        with res_col3:
+            # Progress Bar Visualization
+            st.markdown(f"""<div class="metric-card" style="text-align:left; padding-top:25px;">
+                            <div class="metric-label" style="margin-bottom:10px;">Risk Assessment Gauge</div>
+                        """, unsafe_allow_html=True)
+            
+            if risk_score > 0.5:
+                st.progress(risk_score, text="⚠️ High Risk Detected")
+            else:
+                st.progress(risk_score, text="✅ Low Risk Profile")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # --- Explainability Section (SHAP) ---
+        st.markdown("###")
+        st.subheader("🔍 Model Explainability (SHAP Analysis)")
+        st.markdown("The following chart illustrates how each feature contributed to the final risk score.")
         
-        try:
-            with st.spinner('正在生成 SHAP 解释图...'):
-                # 对 Booster 进行解释，比对 Model 解释更稳定
-                explainer = shap.TreeExplainer(booster)
-                shap_values = explainer.shap_values(input_df)
-                
-                fig, ax = plt.subplots(figsize=(10, 3))
-                
-                # 针对 Booster 的 shap_values 通常直接就是数值，不需要像 classifier 那样取 [1]
-                # 这里做一个兼容性判断
-                if isinstance(shap_values, list):
-                    shap_vals_to_plot = shap_values[1] # 如果意外返回了 list
-                else:
-                    shap_vals_to_plot = shap_values # 通常是这个
-                
-                # 处理单样本维度
-                if shap_vals_to_plot.ndim > 1:
-                    shap_vals_to_plot = shap_vals_to_plot[0]
-                
-                # 获取 base_value
-                base_val = explainer.expected_value
-                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
-                     # 某些版本可能返回 list
-                     pass 
-
-                shap.plots.waterfall(shap.Explanation(values=shap_vals_to_plot, 
-                                                     base_values=base_val, 
-                                                     data=input_df.iloc[0], 
-                                                     feature_names=feature_names),
-                                     show=False)
-                st.pyplot(plt.gcf())
-        except Exception as e_shap:
-            st.warning(f"SHAP 图生成受阻: {e_shap}")
-
+        with st.container():
+            with st.spinner('Calculating feature contributions...'):
+                try:
+                    explainer = shap.TreeExplainer(booster)
+                    shap_values = explainer.shap_values(input_df)
+                    
+                    # Compatibility handling for SHAP return types
+                    if isinstance(shap_values, list):
+                        shap_vals_to_plot = shap_values[1]
+                    else:
+                        shap_vals_to_plot = shap_values
+                    
+                    if shap_vals_to_plot.ndim > 1:
+                        shap_vals_to_plot = shap_vals_to_plot[0]
+                    
+                    base_val = explainer.expected_value
+                    if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1:
+                        pass # Handle list if necessary
+                        
+                    # Visualization configuration
+                    plt.style.use('default') 
+                    fig, ax = plt.subplots(figsize=(10, 4))
+                    
+                    # Generate Waterfall plot
+                    shap.plots.waterfall(shap.Explanation(values=shap_vals_to_plot, 
+                                                         base_values=base_val, 
+                                                         data=input_df.iloc[0], 
+                                                         feature_names=feature_names),
+                                         show=False)
+                    
+                    # Customize plot to blend with UI
+                    plt.gcf().set_facecolor('none') # Transparent background
+                    plt.gca().set_facecolor('none')
+                    
+                    st.pyplot(plt.gcf(), use_container_width=True)
+                    
+                except Exception as e_shap:
+                    st.warning(f"Could not generate SHAP visualization: {e_shap}")
+                    
     except Exception as e:
-        st.error(f"预测错误: {e}")
-        st.write("调试信息：", type(model))
+        st.error(f"Prediction Error: {e}")
+        st.code(f"Debug Info: {type(model)}")
+
+else:
+    # Initial State Prompt
+    st.info("👈 Please configure patient parameters in the sidebar and click 'Run Analysis'.")
+
+# ==========================================
+# 6. Footer / Disclaimer
+# ==========================================
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #6c757d; font-size: 0.8rem;'>
+    <strong>Disclaimer:</strong> This tool is for research and demonstration purposes only. 
+    It is not intended to replace professional medical advice, diagnosis, or treatment.
+    <br>Developed for MCI Research Project © 2026
+</div>
+""", unsafe_allow_html=True)
