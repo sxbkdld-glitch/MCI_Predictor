@@ -305,7 +305,7 @@ if submitted:
             st.markdown(f"""<div class="metric-card" style="text-align:left; padding: 25px;">
                             <div class="metric-label" style="margin-bottom:12px;">Risk Assessment Gauge</div>
                         """, unsafe_allow_html=True)
-            if risk_score > 0.5:
+            if risk_score > 0.46:
                 # 这里的文字现在会强制变成黑色加粗
                 st.progress(risk_score, text="⚠️ Elevated risk detected")
             else:
@@ -372,6 +372,7 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
