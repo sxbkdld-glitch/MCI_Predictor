@@ -187,6 +187,22 @@ except Exception as e:
 # ==========================================
 # 5. 侧边栏：特征输入 (深色适配版)
 # ==========================================
+feature_map = {
+        "Baseline Cognitive": "Baseline Cognitive Score",
+        "iadl": "IADL Impairment Count"
+    }
+
+    with st.form("patient_data_form"):
+        for feature in feature_names:
+            min_val = float(X_test[feature].min())
+            max_val = float(X_test[feature].max())
+            default_val = float(X_test[feature].mean())
+            
+            # --- 新增步骤 2: 应用映射 ---
+            # 如果字典里有这个特征名，就用字典里的；如果没有，还是用默认的英文格式
+            # get(key, default) 方法：尝试查找 feature，找不到就返回 feature.replace... 的结果
+            label = feature_map.get(feature, feature.replace("_", " ").title())
+
 with st.sidebar:
     st.title("📋 Clinical Parameters")
     st.markdown("Please input patient details below:", unsafe_allow_html=True)
@@ -362,4 +378,5 @@ st.markdown("""
     © 2026 MCI Prediction Research Group
 </div>
 """, unsafe_allow_html=True)
+
 
