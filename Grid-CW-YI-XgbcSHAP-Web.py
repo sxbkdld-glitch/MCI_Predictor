@@ -98,7 +98,7 @@ for feature in feature_names:
     max_val = float(X_test[feature].max())
     default_val = float(X_test[feature].mean())
     
-    # --- 新增：针对特定变量的自定义下拉框处理 ---
+    # --- 针对特定变量的自定义下拉框处理 ---
     if feature == 'Sex':
         # 定义映射字典
         sex_mapping = {"Female": 0, "Male": 1}
@@ -135,6 +135,17 @@ for feature in feature_names:
         )
         # 存入模型的数据转换为数字
         input_data[feature] = edu_mapping[selected_label]
+    
+    # --- 新增：强制输入整数的变量 ---
+    elif feature in ['Baseline Cognitive', 'Age', 'IADL']:
+        input_data[feature] = st.sidebar.number_input(
+            f"{feature}",
+            min_value=int(min_val),
+            max_value=int(max_val),
+            value=int(round(default_val)),
+            step=1,          # 每次调整的步长为 1
+            format="%d"      # 强制格式化为整数显示
+        )
         
     # --- 原有逻辑：处理其他未特别指定的变量 ---
     else:
@@ -219,4 +230,3 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
 
 st.markdown("---")
 st.caption("Developed for Clinical Prediction Model Research")
-
