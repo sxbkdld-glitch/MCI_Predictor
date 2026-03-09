@@ -133,7 +133,7 @@ st.markdown("""
 
 st.markdown("""
 <div style="border-left: 4px solid #3b82f6; background-color: #ffffff; padding: 15px 20px; margin-bottom: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 0 8px 8px 0;">
-    <p style="margin: 0 0 5px 0; font-size: 15px; color: #333;"><b>Target Population:</b> Currently cognitively normal individuals.</p>
+    <p style="margin: 0 0 5px 0; font-size: 15px; color: #333;"><b>Target Population:</b> Older adults with currently normal cognitive function.</p>
     <p style="margin: 0; font-size: 15px; color: #333;"><b>Objective:</b> Predict the probability of developing Mild Cognitive Impairment (MCI) within 6 years.</p>
 </div>
 """, unsafe_allow_html=True)
@@ -230,3 +230,4 @@ if run_prediction:
 
     except Exception as e:
         st.error(f"Prediction failed: {e}\nPlease check data formats.")
+
