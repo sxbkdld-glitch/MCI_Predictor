@@ -109,7 +109,7 @@ for feature in feature_names:
         
         # 显示中文下拉框
         selected_label = st.sidebar.selectbox(
-            f"{feature} (Sex)",
+            f"{feature}",
             options=list(sex_mapping.keys()),
             index=default_index
         )
@@ -129,7 +129,7 @@ for feature in feature_names:
         
         # 显示中文下拉框
         selected_label = st.sidebar.selectbox(
-            f"{feature} (Education Level)",
+            f"{feature}",
             options=list(edu_mapping.keys()),
             index=default_index
         )
@@ -219,3 +219,4 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
 
 st.markdown("---")
 st.caption("Developed for Clinical Prediction Model Research")
+
