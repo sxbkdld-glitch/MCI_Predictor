@@ -6,383 +6,216 @@ import xgboost as xgb
 import shap
 import matplotlib.pyplot as plt
 
+import importlib.metadata
+import sys
+
+def generate_requirements():
+    # 1. 这里是 app.py 中用到的核心库列表
+    target_packages = [
+        "streamlit",
+        "pandas",
+        "numpy",
+        "joblib",
+        "xgboost",
+        "shap",
+        "matplotlib",
+        "scikit-learn" 
+    ]
+    
+    output_file = "requirements.txt"
+    successful_packages = []
+    
+    print(f"正在检测 {len(target_packages)} 个核心包的版本...")
+    
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            for package in target_packages:
+                try:
+                    version = importlib.metadata.version(package)
+                    line = f"{package}=={version}"
+                    f.write(line + "\n")
+                    successful_packages.append(line)
+                    print(f"✅ 找到: {line}")
+                except importlib.metadata.PackageNotFoundError:
+                    print(f"⚠️ 警告: 未找到已安装的包 '{package}'，它不会被写入文件。")
+        
+        print("-" * 30)
+        print(f"🎉 成功生成 '{output_file}'！内容如下：")
+        print("\n".join(successful_packages))
+        
+    except Exception as e:
+        print(f"❌ 发生错误: {e}")
+
+if __name__ == "__main__":
+    generate_requirements()
+
 # ==========================================
-# 1. 页面基础配置
+# 1. 页面配置 (Page Configuration)
 # ==========================================
 st.set_page_config(
-    page_title="MCI 6-Year Risk Predictor",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="临床预测模型 Web 应用",
+    page_icon="🏥",
+    layout="wide"
 )
 
-# ==========================================
-# 2. 商业级 UI 设计 (颜色深度修复版)
-# ==========================================
-st.markdown("""
-<style>
-    /* 强制重置字体 */
-    html, body, [class*="css"] {
-        font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    }
-    [data-testid="InputInstructions"] {
-        display: none !important;
-    }
-
-    /* --------------------------------------------------- */
-    /* 核心修复区：解决文字看不清的问题 */
-    /* --------------------------------------------------- */
-    
-    /* 1. 强制主区域的所有各级标题为黑色 */
-    [data-testid="stAppViewContainer"] h1, 
-    [data-testid="stAppViewContainer"] h2, 
-    [data-testid="stAppViewContainer"] h3, 
-    [data-testid="stAppViewContainer"] h4 {
-        color: #000000 !important; /* 纯黑 */
-    }
-
-    /* 2. 特别修复：进度条上方的文字 (Elevated risk detected) */
-    [data-testid="stAppViewContainer"] .stProgress p {
-        color: #000000 !important; /* 纯黑 */
-        font-weight: 600 !important; /* 加粗，更清晰 */
-        font-size: 1rem !important;
-    }
-
-    /* --------------------------------------------------- */
-    /* 侧边栏样式 (保持深色高级感) */
-    /* --------------------------------------------------- */
-    [data-testid="stSidebar"] {
-        background-color: #0f172a; /* 深空蓝黑 */
-        border-right: 1px solid #1e293b;
-    }
-    
-    /* 侧边栏标题必须保持白色 (否则看不见) */
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #f8fafc !important; 
-    }
-    
-    /* 侧边栏普通文字 */
-    [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown {
-        color: #cbd5e1 !important; 
-    }
-    
-    /* 侧边栏输入框说明文字 */
-    [data-testid="stSidebar"] .stNumberInput label, [data-testid="stSidebar"] .stSelectbox label {
-        color: #94a3b8 !important;
-    }
-
-    /* --------------------------------------------------- */
-    /* 主区域样式 (强制浅色背景) */
-    /* --------------------------------------------------- */
-    [data-testid="stAppViewContainer"] {
-        background-color: #f8fafc; /* 极浅灰白背景 */
-    }
-    [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0);
-    }
-
-    /* 主标题样式 */
-    .main-title {
-        font-size: 2.5rem;
-        color: #0f172a !important; /* 深色文字 */
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.5rem;
-    }
-    .sub-title {
-        font-size: 1.1rem;
-        color: #334155 !important; /* 深灰文字 */
-        background-color: #ffffff;
-        padding: 15px 20px;
-        border-radius: 8px;
-        border-left: 5px solid #2563eb;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        margin-bottom: 2rem;
-    }
-
-    /* 结果卡片样式 */
-    .metric-card {
-        background-color: #ffffff; /* 强制白底 */
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        transition: all 0.2s ease;
-    }
-    .metric-value {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin: 10px 0;
-        letter-spacing: -0.02em;
-    }
-    .metric-label {
-        font-size: 0.85rem;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 700;
-    }
-
-    /* 状态颜色 */
-    .text-safe { color: #059669 !important; } 
-    .text-risk { color: #dc2626 !important; } 
-    .bg-safe { background-color: #ecfdf5 !important; border-color: #10b981 !important; }
-    .bg-risk { background-color: #fef2f2 !important; border-color: #ef4444 !important; }
-
-    /* 按钮美化 */
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white;
-        border-radius: 8px;
-        font-weight: 600;
-        padding: 0.6rem 1rem;
-        border: none;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-    }
-    .stButton>button:hover {
-        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-        transform: translateY(-1px);
-    }
-</style>
-""", unsafe_allow_html=True)
-
+st.title("🏥 机器学习临床预测模型演示")
+st.markdown("该应用基于 XGBoost 构建，用于根据患者特征预测风险概率。")
 
 # ==========================================
-# 3. 标题区
-# ==========================================
-col_header_1, col_header_2 = st.columns([1, 6])
-with col_header_1:
-    st.markdown("""
-        <div style='background: white; border-radius: 100px; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: auto;'>
-            <span style='font-size: 3rem;'>🧠</span>
-        </div>
-    """, unsafe_allow_html=True)
-with col_header_2:
-    st.markdown('<div class="main-title">6-Year MCI Risk Prediction System</div>', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="sub-title">
-        <b>Target Population:</b> Currently cognitively normal individuals.<br>
-        <b>Objective:</b> Predict the probability of developing Mild Cognitive Impairment (MCI) within 6 years.
-    </div>
-    """, unsafe_allow_html=True)
-
-# ==========================================
-# 4. 加载资源
+# 2. 加载模型与数据 (Load Model & Data)
 # ==========================================
 @st.cache_resource
 def load_model():
-    return joblib.load('XGBC.pkl')
+    model = joblib.load('XGBC.pkl')
+    return model
 
 @st.cache_data
 def load_data():
-    return pd.read_csv('X_test.csv')
+    data = pd.read_csv('X_test.csv')
+    return data
 
 try:
     model = load_model()
     X_test = load_data()
     feature_names = X_test.columns.tolist()
+    st.success("✅ 模型与数据加载成功！")
 except Exception as e:
-    st.error("System Initialization Error")
-    st.info("Please ensure 'XGBC.pkl' and 'X_test.csv' are uploaded.")
+    st.error(f"加载文件失败，请检查目录下是否存在 'XGBC.pkl' 和 'X_test.csv'。错误信息: {e}")
     st.stop()
 
 # ==========================================
-# 5. 侧边栏：特征输入 (深色适配版)
+# 3. 设计用户输入界面 (User Input Interface)
 # ==========================================
-feature_map = {
-        "Baseline Cognitive": "Baseline Cognitive Score",
-        "IADL": "IADL Impairment Count"
-    }
+st.sidebar.header("📋 请输入特征参数")
+st.sidebar.markdown("请在下方调整各个特征的数值：")
 
+# 自动创建输入字典
+input_data = {}
 
-with st.sidebar:
-    st.title("📋 Clinical Parameters")
-    st.markdown("Please input patient details below:", unsafe_allow_html=True)
-    st.markdown("---")
-
-    input_data = {}
+# 遍历测试集中的每一列，自动生成对应的输入框
+for feature in feature_names:
+    min_val = float(X_test[feature].min())
+    max_val = float(X_test[feature].max())
+    default_val = float(X_test[feature].mean())
     
-    with st.form("patient_data_form"):
-        for feature in feature_names:
-            min_val = float(X_test[feature].min())
-            max_val = float(X_test[feature].max())
-            default_val = float(X_test[feature].mean())
-            label = feature_map.get(feature, feature.replace("_", " ").title())
-            
-            # 1. 婚姻状况特殊处理
-            if 'marital' in feature.lower():
-               
-                input_data[feature] = st.selectbox(
-                    label,
-                    options=[0, 1],
-                    index=1 if default_val > 0.5 else 0,
-                    format_func=lambda x: "Married & Cohabitating" if x == 1 else "Other"
-                   
-                )
-            
-            # 2. 整数变量处理
-            elif any(x in feature.lower() for x in ['age', 'cognitive', 'score', 'iadl']):
-                if 'iadl' in feature.lower():
-                     current_min, current_max = 0.0, 8.0
-                else:
-                     current_min, current_max = min_val, max_val
-
-                input_data[feature] = st.number_input(
-                    f"{label}",
-                    min_value=int(current_min),
-                    max_value=int(current_max),
-                    value=int(default_val),
-                    step=1,
-                    format="%d"
-                )
-
-            # 3. 其他变量
-            elif X_test[feature].nunique() <= 2:
-                input_data[feature] = st.selectbox(label, options=[0, 1], index=int(default_val))
-            else:
-                input_data[feature] = st.number_input(
-                    label,
-                    min_value=min_val,
-                    max_value=max_val,
-                    value=default_val,
-                    format="%.2f"
-                )
+    # --- 新增：针对特定变量的自定义下拉框处理 ---
+    if feature == 'Sex':
+        # 定义映射字典
+        sex_mapping = {"Female": 0, "Male": 1}
+        # 确定默认选项的索引
+        default_int = int(round(default_val))
+        default_label = "Male" if default_int == 1 else "Female"
+        default_index = list(sex_mapping.keys()).index(default_label)
         
-        st.markdown("###")
-        submitted = st.form_submit_button("Run Prediction Analysis")
+        # 显示中文下拉框
+        selected_label = st.sidebar.selectbox(
+            f"{feature} (Sex)",
+            options=list(sex_mapping.keys()),
+            index=default_index
+        )
+        # 存入模型的数据转换为数字
+        input_data[feature] = sex_mapping[selected_label]
+        
+    elif feature == 'Education Level':
+        # 定义映射字典
+        edu_mapping = {"Illiterate": 1, "Primary school": 2, "Middle School": 3, "High School or above": 4}
+        default_int = int(round(default_val))
+        # 防止测试集均值四舍五入后不在 1-4 范围内，做个兜底
+        if default_int not in edu_mapping.values():
+            default_int = 1 
+        
+        default_label = [k for k, v in edu_mapping.items() if v == default_int][0]
+        default_index = list(edu_mapping.keys()).index(default_label)
+        
+        # 显示中文下拉框
+        selected_label = st.sidebar.selectbox(
+            f"{feature} (Education Level)",
+            options=list(edu_mapping.keys()),
+            index=default_index
+        )
+        # 存入模型的数据转换为数字
+        input_data[feature] = edu_mapping[selected_label]
+        
+    # --- 原有逻辑：处理其他未特别指定的变量 ---
+    else:
+        if X_test[feature].nunique() <= 2:
+            input_data[feature] = st.sidebar.selectbox(
+                f"{feature}",
+                options=[0, 1],
+                index=int(round(default_val)) # 加了 round 防止均值偏离导致越界
+            )
+        else:
+            input_data[feature] = st.sidebar.number_input(
+                f"{feature}",
+                min_value=min_val,
+                max_value=max_val,
+                value=default_val,
+                format="%.2f"
+            )
 
-# 转为 DataFrame
+# 将用户输入转换为 DataFrame
 input_df = pd.DataFrame([input_data])
 
 # ==========================================
-# 6. 预测逻辑与展示
+# 4. 处理输入并调用模型预测 (Prediction)
 # ==========================================
-if submitted:
+with st.expander("查看当前输入数据（传给模型的值）"):
+    st.dataframe(input_df)
+
+if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
+    
+    st.subheader("📊 预测结果")
+    
     try:
-        booster = model.get_booster()
-        dtest = xgb.DMatrix(input_df)
-        risk_score = booster.predict(dtest)
+        prediction_proba = model.predict_proba(input_df)[0]
+        prediction_class = model.predict(input_df)[0]
         
-        if isinstance(risk_score, np.ndarray):
-            risk_score = float(risk_score[0])
+        risk_score = prediction_proba[1] 
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="预测类别 (Class)", value=int(prediction_class))
+        with col2:
+            st.metric(label="风险概率 (Risk Probability)", value=f"{risk_score:.2%}")
+            
+        if risk_score > 0.5:
+            st.error("⚠️ 警告：模型预测为高风险！")
         else:
-            risk_score = float(risk_score)
+            st.success("✅ 提示：模型预测为低风险。")
+
+        # ==========================================
+        # 5. 展示可视化解释 (Visualization)
+        # ==========================================
+        st.markdown("---")
+        st.subheader("🔍 模型解释 (SHAP Visualization)")
+        st.markdown("下图展示了各特征对本次预测结果的具体贡献方向和大小：")
+        
+        with st.spinner('正在生成 SHAP 解释图...'):
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(input_df)
             
-        prediction_class = 1 if risk_score > 0.46 else 0
-        
-        # --- 结果展示区 ---
-        st.markdown("###")
-        st.subheader("Diagnostic Report") # 这里的文字现在会强制变成黑色
-        
-        res_col1, res_col2, res_col3 = st.columns([1.2, 1.2, 2])
-        
-        theme_color = "text-risk" if prediction_class == 1 else "text-safe"
-        bg_class = "bg-risk" if prediction_class == 1 else "bg-safe"
-        status_text = "HIGH RISK" if prediction_class == 1 else "LOW RISK"
-        
-        with res_col1:
-            st.markdown(f"""
-            <div class="metric-card {bg_class}">
-                <div class="metric-label">Predicted Outcome</div>
-                <div class="metric-value {theme_color}">{status_text}</div>
-                <div style="font-size:0.8rem; color:#64748b;">@ 6 Years Horizon</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with res_col2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">Probability</div>
-                <div class="metric-value {theme_color}">{risk_score:.2%}</div>
-                <div style="font-size:0.8rem; color:#64748b;">Confidence Score</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with res_col3:
-            # 进度条
-            st.markdown(f"""<div class="metric-card" style="text-align:left; padding: 25px;">
-                            <div class="metric-label" style="margin-bottom:12px;">Risk Assessment Gauge</div>
-                        """, unsafe_allow_html=True)
-            if risk_score > 0.46:
-                # 这里的文字现在会强制变成黑色加粗
-                st.progress(risk_score, text="⚠️ Elevated risk detected")
-            else:
-                st.progress(risk_score, text="✅ Patient is likely to remain stable")
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        # --- SHAP 可视化 ---
-        st.markdown("###")
-        st.subheader("Interpretability Analysis (SHAP)") # 这里的文字现在会强制变成黑色
-        
-        # 容器背景设为白色
-        with st.container():
-            st.markdown('<div style="background-color: white; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">', unsafe_allow_html=True)
-            
-            with st.spinner('Calculating feature importance...'):
-                explainer = shap.TreeExplainer(booster)
-                shap_values = explainer.shap_values(input_df)
+            try:
+                fig, ax = plt.subplots(figsize=(10, 3))
+                if isinstance(shap_values, list):
+                    shap_val_to_plot = shap_values[1]
+                    base_val = explainer.expected_value[1]
+                else:
+                    shap_val_to_plot = shap_values
+                    base_val = explainer.expected_value
                 
-                if isinstance(shap_values, list): shap_val = shap_values[1]
-                else: shap_val = shap_values
-                
-                if shap_val.ndim > 1: shap_val = shap_val[0]
-
-                base_val = explainer.expected_value
-                if isinstance(base_val, (list, np.ndarray)) and len(base_val) > 1: pass 
-
-                # 绘图设置
-                plt.style.use('default') 
-                fig, ax = plt.subplots(figsize=(10, 5))
-                fig.patch.set_facecolor('white') # 强制白底
-                ax.set_facecolor('white')
-                
-                shap.plots.waterfall(shap.Explanation(values=shap_val, 
+                shap.plots.waterfall(shap.Explanation(values=shap_val_to_plot[0], 
                                                      base_values=base_val, 
                                                      data=input_df.iloc[0], 
                                                      feature_names=feature_names),
                                      show=False)
+                st.pyplot(plt.gcf())
                 
-                # 强制坐标轴和文字为黑色 (解决看不清的问题)
-                plt.rcParams['text.color'] = '#000000'
-                plt.rcParams['axes.labelcolor'] = '#000000'
-                plt.rcParams['xtick.color'] = '#000000'
-                plt.rcParams['ytick.color'] = '#000000'
-                
-                st.pyplot(fig, use_container_width=True)
-                st.caption("Chart Guide: Red bars push risk HIGHER, Blue bars push risk LOWER.")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+            except Exception as e:
+                st.warning(f"SHAP 图生成遇到小问题，尝试备用绘图方式... {e}")
+                st.bar_chart(pd.Series(shap_val_to_plot[0], index=feature_names))
 
     except Exception as e:
-        st.error(f"Prediction Error: {e}")
+        st.error(f"预测过程中发生错误: {e}\n可能是输入数据格式与模型不匹配。")
 
-else:
-    # 初始状态提示
-    st.info("👈 Please enter patient data in the sidebar and click 'Run Prediction Analysis' to start.")
-
-# ==========================================
-# 7. 页脚
-# ==========================================
 st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #94a3b8; font-size: 0.8rem; padding-bottom: 20px;'>
-    <strong>Research Prototype.</strong> Not for clinical diagnosis.<br>
-    © 2026 MCI Prediction Research Group
-</div>
-""", unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+st.caption("Developed for Clinical Prediction Model Research")
