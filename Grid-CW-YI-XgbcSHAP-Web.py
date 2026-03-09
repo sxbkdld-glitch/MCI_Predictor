@@ -10,7 +10,6 @@ import importlib.metadata
 import sys
 
 def generate_requirements():
-    # 1. 这里是 app.py 中用到的核心库列表
     target_packages = [
         "streamlit",
         "pandas",
@@ -25,8 +24,6 @@ def generate_requirements():
     output_file = "requirements.txt"
     successful_packages = []
     
-    print(f"正在检测 {len(target_packages)} 个核心包的版本...")
-    
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             for package in target_packages:
@@ -35,14 +32,8 @@ def generate_requirements():
                     line = f"{package}=={version}"
                     f.write(line + "\n")
                     successful_packages.append(line)
-                    print(f"✅ 找到: {line}")
                 except importlib.metadata.PackageNotFoundError:
-                    print(f"⚠️ 警告: 未找到已安装的包 '{package}'，它不会被写入文件。")
-        
-        print("-" * 30)
-        print(f"🎉 成功生成 '{output_file}'！内容如下：")
-        print("\n".join(successful_packages))
-        
+                    pass
     except Exception as e:
         print(f"❌ 发生错误: {e}")
 
@@ -53,13 +44,10 @@ if __name__ == "__main__":
 # 1. 页面配置 (Page Configuration)
 # ==========================================
 st.set_page_config(
-    page_title="临床预测模型 Web 应用",
-    page_icon="🏥",
+    page_title="6-Year MCI Risk Prediction System",
+    page_icon="🧠",
     layout="wide"
 )
-
-st.title("🏥 机器学习临床预测模型演示")
-st.markdown("该应用基于 XGBoost 构建，用于根据患者特征预测风险概率。")
 
 # ==========================================
 # 2. 加载模型与数据 (Load Model & Data)
@@ -78,135 +66,151 @@ try:
     model = load_model()
     X_test = load_data()
     feature_names = X_test.columns.tolist()
-    st.success("✅ 模型与数据加载成功！")
 except Exception as e:
-    st.error(f"加载文件失败，请检查目录下是否存在 'XGBC.pkl' 和 'X_test.csv'。错误信息: {e}")
+    st.error(f"Failed to load model or data. Error: {e}")
     st.stop()
 
 # ==========================================
-# 3. 设计用户输入界面 (User Input Interface)
+# 3. 设计用户输入界面 (Sidebar Input)
 # ==========================================
-st.sidebar.header("📋 请输入特征参数")
-st.sidebar.markdown("请在下方调整各个特征的数值：")
+st.sidebar.markdown("### 📋 Clinical Parameters")
+st.sidebar.markdown("Please input patient details below:")
+st.sidebar.markdown("---")
 
-# 自动创建输入字典
 input_data = {}
 
-# 遍历测试集中的每一列，自动生成对应的输入框
 for feature in feature_names:
     min_val = float(X_test[feature].min())
     max_val = float(X_test[feature].max())
     default_val = float(X_test[feature].mean())
     
-    # --- 针对特定变量的自定义下拉框处理 ---
     if feature == 'Sex':
-        # 定义映射字典
         sex_mapping = {"Female": 0, "Male": 1}
-        # 确定默认选项的索引
         default_int = int(round(default_val))
         default_label = "Male" if default_int == 1 else "Female"
         default_index = list(sex_mapping.keys()).index(default_label)
-        
-        # 显示中文下拉框
-        selected_label = st.sidebar.selectbox(
-            f"{feature}",
-            options=list(sex_mapping.keys()),
-            index=default_index
-        )
-        # 存入模型的数据转换为数字
+        selected_label = st.sidebar.selectbox(f"{feature}", options=list(sex_mapping.keys()), index=default_index)
         input_data[feature] = sex_mapping[selected_label]
         
     elif feature == 'Education Level':
-        # 定义映射字典
         edu_mapping = {"Illiterate": 1, "Primary school": 2, "Middle School": 3, "High School or above": 4}
         default_int = int(round(default_val))
-        # 防止测试集均值四舍五入后不在 1-4 范围内，做个兜底
         if default_int not in edu_mapping.values():
             default_int = 1 
-        
         default_label = [k for k, v in edu_mapping.items() if v == default_int][0]
         default_index = list(edu_mapping.keys()).index(default_label)
-        
-        # 显示中文下拉框
-        selected_label = st.sidebar.selectbox(
-            f"{feature}",
-            options=list(edu_mapping.keys()),
-            index=default_index
-        )
-        # 存入模型的数据转换为数字
+        selected_label = st.sidebar.selectbox(f"{feature}", options=list(edu_mapping.keys()), index=default_index)
         input_data[feature] = edu_mapping[selected_label]
-    
-    # --- 新增：强制输入整数的变量 ---
-    elif feature in ['Baseline Cognitive', 'Age', 'IADL']:
+        
+    elif feature in ['Baseline Cognitive', 'Age', 'IADL', 'IADL Impairment Count']:
         input_data[feature] = st.sidebar.number_input(
             f"{feature}",
             min_value=int(min_val),
             max_value=int(max_val),
             value=int(round(default_val)),
-            step=1,          # 每次调整的步长为 1
-            format="%d"      # 强制格式化为整数显示
+            step=1,
+            format="%d"
         )
         
-    # --- 原有逻辑：处理其他未特别指定的变量 ---
     else:
         if X_test[feature].nunique() <= 2:
-            input_data[feature] = st.sidebar.selectbox(
-                f"{feature}",
-                options=[0, 1],
-                index=int(round(default_val)) # 加了 round 防止均值偏离导致越界
-            )
+            input_data[feature] = st.sidebar.selectbox(f"{feature}", options=[0, 1], index=int(round(default_val)))
         else:
-            input_data[feature] = st.sidebar.number_input(
-                f"{feature}",
-                min_value=min_val,
-                max_value=max_val,
-                value=default_val,
-                format="%.2f"
-            )
+            input_data[feature] = st.sidebar.number_input(f"{feature}", min_value=min_val, max_value=max_val, value=default_val, format="%.2f")
 
-# 将用户输入转换为 DataFrame
 input_df = pd.DataFrame([input_data])
 
 # ==========================================
-# 4. 处理输入并调用模型预测 (Prediction)
+# 4. 主视觉与预测逻辑 (Main UI & Prediction)
 # ==========================================
-with st.expander("查看当前输入数据（传给模型的值）"):
-    st.dataframe(input_df)
+# 顶部标题与描述
+st.markdown("""
+<div style="display: flex; align-items: center; margin-bottom: 20px;">
+    <span style="font-size: 40px; margin-right: 15px;">🧠</span>
+    <h1 style="margin: 0; padding: 0;">6-Year MCI Risk Prediction System</h1>
+</div>
+""", unsafe_allow_html=True)
 
-if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
-    
-    st.subheader("📊 预测结果")
-    
+st.markdown("""
+<div style="border-left: 4px solid #3b82f6; background-color: #ffffff; padding: 15px 20px; margin-bottom: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-radius: 0 8px 8px 0;">
+    <p style="margin: 0 0 5px 0; font-size: 15px; color: #333;"><b>Target Population:</b> Currently cognitively normal individuals.</p>
+    <p style="margin: 0; font-size: 15px; color: #333;"><b>Objective:</b> Predict the probability of developing Mild Cognitive Impairment (MCI) within 6 years.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# 侧边栏按钮触发预测
+run_prediction = st.sidebar.button("Run Prediction Analysis")
+
+if run_prediction:
     try:
         prediction_proba = model.predict_proba(input_df)[0]
-        prediction_class = model.predict(input_df)[0]
-        
         risk_score = prediction_proba[1] 
+        prob_percent = risk_score * 100
+        is_high_risk = risk_score > 0.5
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="预测类别 (Class)", value=int(prediction_class))
-        with col2:
-            st.metric(label="风险概率 (Risk Probability)", value=f"{risk_score:.2%}")
-            
-        if risk_score > 0.5:
-            st.error("⚠️ 警告：模型预测为高风险！")
+        # 动态设置卡片样式颜色
+        if is_high_risk:
+            outcome_text = "HIGH RISK"
+            outcome_color = "#dc2626"
+            card1_border = "#fca5a5"
+            card1_bg = "#fef2f2"
+            gauge_icon = "⚠️"
+            gauge_text = "Elevated risk detected"
         else:
-            st.success("✅ 提示：模型预测为低风险。")
+            outcome_text = "LOW RISK"
+            outcome_color = "#16a34a" 
+            card1_border = "#86efac"
+            card1_bg = "#f0fdf4"
+            gauge_icon = "✅"
+            gauge_text = "Low risk detected"
+
+        st.markdown("### Diagnostic Report")
+        col1, col2, col3 = st.columns(3)
+        
+        # Card 1: Predicted Outcome
+        with col1:
+            st.markdown(f"""
+            <div style="border: 1px solid {card1_border}; background-color: {card1_bg}; border-radius: 8px; padding: 25px 20px; text-align: center; height: 160px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;">Predicted Outcome</p>
+                <h2 style="color: {outcome_color}; margin: 0; font-size: 34px; font-weight: 900;">{outcome_text}</h2>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 15px; margin-bottom: 0;">@ 6 Years Horizon</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Card 2: Probability
+        with col2:
+            st.markdown(f"""
+            <div style="border: 1px solid #e2e8f0; background-color: #ffffff; border-radius: 8px; padding: 25px 20px; text-align: center; height: 160px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;">Probability</p>
+                <h2 style="color: {outcome_color}; margin: 0; font-size: 34px; font-weight: 900;">{prob_percent:.2f}%</h2>
+                <p style="font-size: 11px; color: #94a3b8; margin-top: 15px; margin-bottom: 0;">Confidence Score</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Card 3: Gauge
+        with col3:
+            st.markdown(f"""
+            <div style="border: 1px solid #e2e8f0; background-color: #ffffff; border-radius: 8px; padding: 25px 20px; height: 160px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <p style="font-size: 11px; color: #64748b; font-weight: 700; margin-bottom: 30px; letter-spacing: 1px; text-transform: uppercase;">Risk Assessment Gauge</p>
+                <p style="font-size: 14px; font-weight: 700; color: #1e293b; margin: 0 0 10px 0;">{gauge_icon} {gauge_text}</p>
+                <div style="width: 100%; background-color: #334155; border-radius: 3px; height: 8px; display: flex;">
+                    <div style="width: {prob_percent}%; background-color: #3b82f6; height: 100%; border-radius: 3px 0 0 3px;"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # ==========================================
-        # 5. 展示可视化解释 (Visualization)
+        # 5. 可视化解释 (SHAP Visualization)
         # ==========================================
-        st.markdown("---")
-        st.subheader("🔍 模型解释 (SHAP Visualization)")
-        st.markdown("下图展示了各特征对本次预测结果的具体贡献方向和大小：")
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("### Interpretability Analysis (SHAP)")
         
-        with st.spinner('正在生成 SHAP 解释图...'):
+        with st.spinner('Generating SHAP explanation...'):
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(input_df)
             
             try:
-                fig, ax = plt.subplots(figsize=(10, 3))
+                fig, ax = plt.subplots(figsize=(10, 3.5))
                 if isinstance(shap_values, list):
                     shap_val_to_plot = shap_values[1]
                     base_val = explainer.expected_value[1]
@@ -220,13 +224,9 @@ if st.button("🚀 开始预测 (Run Prediction)", type="primary"):
                                                      feature_names=feature_names),
                                      show=False)
                 st.pyplot(plt.gcf())
-                
             except Exception as e:
-                st.warning(f"SHAP 图生成遇到小问题，尝试备用绘图方式... {e}")
+                st.warning(f"Error generating SHAP plot: {e}")
                 st.bar_chart(pd.Series(shap_val_to_plot[0], index=feature_names))
 
     except Exception as e:
-        st.error(f"预测过程中发生错误: {e}\n可能是输入数据格式与模型不匹配。")
-
-st.markdown("---")
-st.caption("Developed for Clinical Prediction Model Research")
+        st.error(f"Prediction failed: {e}\nPlease check data formats.")
