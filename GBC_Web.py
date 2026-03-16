@@ -198,7 +198,7 @@ if run_prediction:
             </div>
             """, unsafe_allow_html=True)
 
-        # ==========================================
+       # ==========================================
         # 5. 可视化解释 (SHAP Visualization)
         # ==========================================
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -210,22 +210,37 @@ if run_prediction:
             
             try:
                 fig, ax = plt.subplots(figsize=(10, 3.5))
-                if isinstance(shap_values, list):
-                    shap_val_to_plot = shap_values[1]
-                    base_val = explainer.expected_value[1]
-                else:
-                    shap_val_to_plot = shap_values
-                    base_val = explainer.expected_value
                 
-                shap.plots.waterfall(shap.Explanation(values=shap_val_to_plot[0], 
-                                                     base_values=base_val, 
-                                                     data=input_df.iloc[0], 
-                                                     feature_names=feature_names),
-                                     show=False)
+                # 1. 处理 SHAP Values 维度差异
+                if isinstance(shap_values, list):
+                    shap_val_to_plot = shap_values[1][0]  # 取类别 1 的第一个样本
+                    raw_base_val = explainer.expected_value[1]
+                else:
+                    shap_val_to_plot = shap_values[0]     # GBC 通常走这个分支，取第一个样本
+                    raw_base_val = explainer.expected_value
+                
+                # 2. 强制转换 Base Value 为 Python Scalar (标量)
+                if isinstance(raw_base_val, (np.ndarray, list)):
+                    base_val = raw_base_val[0]
+                else:
+                    base_val = raw_base_val
+                
+                base_val = float(base_val) # 彻底解决 "only 0-dimensional arrays" 报错
+                
+                # 3. 生成瀑布图
+                shap.plots.waterfall(shap.Explanation(
+                    values=shap_val_to_plot, 
+                    base_values=base_val, 
+                    data=input_df.iloc[0], 
+                    feature_names=feature_names
+                ), show=False)
+                
                 st.pyplot(plt.gcf())
+                
             except Exception as e:
                 st.warning(f"Error generating SHAP plot: {e}")
-                st.bar_chart(pd.Series(shap_val_to_plot[0], index=feature_names))
+                # 如果依然报错，提供一个降级显示的条形图
+                st.bar_chart(pd.Series(shap_val_to_plot, index=feature_names))
 
     except Exception as e:
         st.error(f"Prediction failed: {e}\nPlease check data formats.")
